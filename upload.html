@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Add Your Track</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/app.css">
+  
+  <style>
+    /* ОБЩИЕ УЛУЧШЕНИЯ ВЁРСТКИ */
+    .upload-container { 
+      max-width: 500px; 
+      margin: 0 auto; 
+      padding: 0 24px 48px; /* Добавлен отступ снизу */
+    }
+    
+    /* FLEXBOX ДЛЯ ФОРМЫ */
+    .upload-form {
+      display: flex;
+      flex-direction: column;
+      gap: 20px; /* Равномерный отступ между всеми элементами */
+    }
+
+    .upload-form label {
+      display: flex;
+      flex-direction: column;
+      gap: 8px; /* Отступ между названием поля и самим полем */
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    /* Стиль для плейсхолдеров */
+    .upload-form input::placeholder {
+      font-style: italic;
+      font-weight: 400 !important; /* Гарантированно нежирный шрифт */
+      color: #888;
+    }
+    
+    .search-link-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      padding: 8px 12px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: bold;
+      color: #fff;
+      background-color: rgba(255, 255, 255, 0.1);
+      transition: background-color 0.2s;
+    }
+    .search-link-btn:hover { background-color: rgba(255, 255, 255, 0.2); }
+    .search-link-btn img { width: 18px; height: 18px; }
+
+    .progress-container { display: flex; align-items: center; gap: 12px; }
+    .progress-bar-bg { flex-grow: 1; height: 12px; background-color: rgba(255, 255, 255, 0.1); border-radius: 6px; overflow: hidden; }
+    #progress-bar { width: 0%; height: 100%; background-color: var(--glow-color, #6633ff); transition: width 0.2s ease-out; }
+    #progress-text { font-weight: bold; font-size: 14px; min-width: 80px; text-align: right; }
+
+    .final-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    /* Стили для модального окна (добавьте их, если у вас нет общих стилей для modal) */
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        padding: 20px;
+    }
+    .modal.hidden {
+        display: none;
+    }
+    .modal-content {
+        background: #1a1a1a;
+        padding: 24px;
+        border-radius: 12px;
+        max-width: 600px;
+        width: 100%;
+        max-height: 80vh;
+        overflow-y: auto;
+        color: #fff;
+    }
+    .modal-content h2, .modal-content h3 {
+        color: #fff;
+    }
+    .modal-content ul {
+        padding-left: 20px;
+        line-height: 1.6;
+    }
+    .modal-content p {
+        line-height: 1.6;
+    }
+    .close-btn {
+        display: inline-block;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        background-color: #6633ff;
+        color: white;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    .rules-link {
+        background: none;
+        border: none;
+        color: #6633ff;
+        text-decoration: underline;
+        cursor: pointer;
+        padding: 0;
+        font-size: inherit;
+        font-family: inherit;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="player-container" style="overflow-y:auto; padding-top:60px;">
+    <div class="upload-container">
+      <h1>Add Your Track</h1>
+      <form id="upload-form" class="upload-form">
+        
+        <label>Song Title
+            <input type="text" name="song_title" id="song_title_input" placeholder="Enter your song title" required>
+        </label>
+        <label>Artist
+            <input type="text" name="artist" id="artist_input" placeholder="Enter your artist name" required>
+        </label>
+
+        <label>File (MP3 or WAV)
+            <input type="file" name="audio_file" accept=".mp3,.wav" required>
+        </label>
+        
+        <div id="clip-controls" style="display:none;">
+          <div id="clip-info" class="clip-info" style="display:none;">
+            <span id="clip-length">Selected 30s</span>
+            <span id="clip-times">00:00 / 00:00</span>
+          </div>
+          <audio id="audioPreview" style="display:none;"></audio>
+          <div class="timeline" id="timeline" style="display:none; position:relative;">
+            <canvas id="waveformCanvas" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;"></canvas>
+            <div class="clip-window" id="clipWindow"></div>
+          </div>
+          <div id="clip-actions" class="clip-actions" style="display:flex; gap:12px; margin-top:12px;">
+            <button type="button" id="cancel-clip" class="back-btn">Cancel</button>
+            <button type="button" id="confirm-clip" class="save-btn">Confirm</button>
+          </div>
+        </div>
+        
+        <label>Genre
+          <select name="genre" required>
+            <option value="" disabled selected>Select genre</option>
+            <option value="Pop">Pop</option>
+            <option value="Dance">Dance</option>
+            <option value="Hip-Hop/Rap">Hip-Hop/Rap</option>
+            <option value="Electronic">Electronic</option>
+            <option value="R&B/Soul">R&B/Soul</option>
+            <option value="Alternative">Alternative</option>
+            <option value="Rock">Rock</option>
+            <option value="Country">Country</option>
+          </select>
+        </label>
+
+        <div id="search-links-container" style="display:none; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+            <p style="margin: 0 0 10px 0; font-size: 14px; font-weight: bold;">Search Helper (opens in a new tab):</p>
+            <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                <a id="spotify-search-link" href="#" target="_blank" class="search-link-btn"><img src="assets/icons/brand-spotify.svg" alt="Spotify"> Spotify</a>
+                <a id="youtube-search-link" href="#" target="_blank" class="search-link-btn"><img src="assets/icons/brand-ytmusic.svg" alt="YouTube Music"> YouTube Music</a>
+                <a id="apple-search-link" href="#" target="_blank" class="search-link-btn"><img src="assets/icons/brand-applemusic.svg" alt="Apple Music"> Apple Music</a>
+                <a id="amazon-search-link" href="#" target="_blank" class="search-link-btn"><img src="assets/icons/brand-amazon.svg" alt="Amazon Music"> Amazon Music</a>
+            </div>
+        </div>
+
+        <label>Spotify (optional)
+            <input type="url" name="spotify" placeholder="https://open.spotify.com/track/1qSo41Z9cAZdl3VtxYLNLi?si=72a528c11993407c">
+        </label>
+        <label>YouTube Music (optional)
+            <input type="url" name="youtube_music" placeholder="https://music.youtube.com/watch?v=...">
+        </label>
+        <label>Apple Music (optional)
+            <input type="url" name="apple_music" placeholder="https://music.apple.com/us/song/...">
+        </label>
+        <label>Amazon Music (optional)
+            <input type="url" name="amazon_music" placeholder="https://music.amazon.com/tracks/...">
+        </label>
+        
+        <div style="display: flex; align-items: center; gap: 10px;">
+  <input type="checkbox" id="agree" required style="width: 18px; height: 18px; margin: 0; flex-shrink: 0;">
+  <label for="agree" style="font-size: 13px; font-weight: normal; line-height: 1;">
+    I accept the 
+    <button type="button" id="open-rules" class="rules-link" style="margin-left: 3px;">service rules</button>
+  </label>
+</div>
+
+        <div class="final-actions">
+            <button type="submit" class="save-btn">Upload</button>
+            <button type="button" class="back-btn" id="back-to-player">Back to Player</button>
+        </div>
+
+        <div id="progress-container" class="progress-container" style="display:none;">
+          <div class="progress-bar-bg"><div id="progress-bar"></div></div>
+          <span id="progress-text">0%</span>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    // ================================================================
+    // БЛОК 1: ЛОГИКА ДЛЯ ДИНАМИЧЕСКИХ ПОИСКОВЫХ ССЫЛОК
+    // ================================================================
+    const artistInput = document.getElementById('artist_input');
+    const titleInput = document.getElementById('song_title_input');
+    const searchLinksContainer = document.getElementById('search-links-container');
+    const spotifySearchLink = document.getElementById('spotify-search-link');
+    const youtubeSearchLink = document.getElementById('youtube-search-link');
+    const appleSearchLink = document.getElementById('apple-search-link');
+    const amazonSearchLink = document.getElementById('amazon-search-link');
+
+    function updateSearchLinks() {
+        const artist = artistInput.value.trim();
+        const title = titleInput.value.trim();
+
+        if (!artist || !title) {
+            searchLinksContainer.style.display = 'none';
+            return;
+        }
+
+        searchLinksContainer.style.display = 'block';
+        const searchQuery = encodeURIComponent(`${title} ${artist}`);
+        
+        spotifySearchLink.href = `https://open.spotify.com/search/${title} ${artist}`;
+        youtubeSearchLink.href = `https://music.youtube.com/search?q=${title} ${artist}`;
+        appleSearchLink.href = `https://music.apple.com/us/search?term=${title} ${artist}`;
+        amazonSearchLink.href = `https://music.amazon.com/search/${title}+${artist}`;
+    }
+
+    artistInput.addEventListener('input', updateSearchLinks);
+    titleInput.addEventListener('input', updateSearchLinks);
+    artistInput.addEventListener('change', updateSearchLinks);
+    titleInput.addEventListener('change', updateSearchLinks);
+
+    // ================================================================
+    // БЛОК 2: ЛОГИКА ДЛЯ ВЕЙВФОРМЫ И ВЫБОРА ОТРЕЗКА
+    // ================================================================
+    const fileInput = document.querySelector('input[name="audio_file"]');
+    const clipControls = document.getElementById('clip-controls');
+    let clipStartSec = 0;
+    const audioPreview = document.getElementById('audioPreview');
+    const timeline = document.getElementById('timeline');
+    const clipWindow = document.getElementById('clipWindow');
+    let audioDuration = 0;
+    const clipInfo = document.getElementById('clip-info');
+    const clipLengthLabel = document.getElementById('clip-length');
+    const clipTimesLabel = document.getElementById('clip-times');
+    const clipDurationSec = 30;
+    const waveformScale = 0.5;
+    const waveformCanvas = document.getElementById('waveformCanvas');
+    const waveformCtx = waveformCanvas.getContext('2d');
+    let filteredData = [];
+    let maxVal = 1;
+    let waveformBarWidth = 4;
+    let waveformGap = 1;
+    let waveformBarCount = 0;
+    const desiredBarCount = 120;
+    let selectedFile = null;
+
+    function drawBaseWaveform() {
+      if (!filteredData.length) return;
+      waveformCtx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
+      const height = waveformCanvas.height;
+      const centerY = height / 2;
+      waveformCtx.lineCap = 'round';
+      waveformCtx.lineWidth = waveformBarWidth;
+      for (let i = 0; i < filteredData.length; i++) {
+        const val = filteredData[i] / maxVal;
+        const barHeight = val * height * waveformScale;
+        const yStart = centerY - barHeight / 2;
+        const yEnd = yStart + barHeight;
+        const x = i * (waveformBarWidth + waveformGap) + waveformBarWidth / 2;
+        waveformCtx.strokeStyle = 'rgba(255,255,255,0.2)';
+        waveformCtx.beginPath();
+        waveformCtx.moveTo(x, yStart);
+        waveformCtx.lineTo(x, yEnd);
+        waveformCtx.stroke();
+      }
+    }
+
+    function drawHighlight() {
+      if (!filteredData.length) return;
+      const height = waveformCanvas.height;
+      const centerY = height / 2;
+      const startBar = Math.round((clipStartSec / audioDuration) * waveformBarCount);
+      const barsInSelection = Math.round((clipDurationSec / audioDuration) * waveformBarCount);
+      const endBar = startBar + barsInSelection;
+      drawBaseWaveform();
+      const glowVal = getComputedStyle(document.documentElement).getPropertyValue('--glow-color').trim() || '#6633ff';
+      let r = 102, g = 51, b = 255;
+      if (glowVal.startsWith('rgb')) {
+        const m = glowVal.match(/(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+        if (m) { r = parseInt(m[1]); g = parseInt(m[2]); b = parseInt(m[3]); }
+      } else if (glowVal.startsWith('#')) {
+        const hex = glowVal.slice(1);
+        if (hex.length === 6) {
+          r = parseInt(hex.substr(0, 2), 16);
+          g = parseInt(hex.substr(2, 2), 16);
+          b = parseInt(hex.substr(4, 2), 16);
+        }
+      }
+      let progress = 0;
+      if (!audioPreview.paused && !isNaN(audioPreview.currentTime) && audioPreview.currentTime >= clipStartSec) {
+        progress = Math.min(1, (audioPreview.currentTime - clipStartSec) / clipDurationSec);
+      }
+      const playedBars = Math.floor(barsInSelection * progress);
+      waveformCtx.lineCap = 'round';
+      waveformCtx.lineWidth = waveformBarWidth;
+      for (let i = 0; i < filteredData.length; i++) {
+        const val = filteredData[i] / maxVal;
+        const barHeight = val * height * waveformScale;
+        const yStart = centerY - barHeight / 2;
+        const yEnd = yStart + barHeight;
+        const x = i * (waveformBarWidth + waveformGap) + waveformBarWidth / 2;
+        let color;
+        if (i < startBar || i >= endBar) {
+          color = 'rgba(255,255,255,0.2)';
+        } else if (i - startBar < playedBars) {
+          color = `rgba(${r},${g},${b},1)`;
+        } else {
+          color = 'rgba(255,255,255,0.8)';
+        }
+        waveformCtx.strokeStyle = color;
+        waveformCtx.beginPath();
+        waveformCtx.moveTo(x, yStart);
+        waveformCtx.lineTo(x, yEnd);
+        waveformCtx.stroke();
+      }
+    }
+
+    async function generateWaveform(file) {
+      try {
+        const reader = new FileReader();
+        reader.onload = async function() {
+          const arrayBuffer = reader.result;
+          const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+          const channelData = audioBuffer.getChannelData(0);
+          waveformCanvas.width = timeline.clientWidth;
+          waveformCanvas.height = timeline.clientHeight;
+          const availableWidth = waveformCanvas.width;
+          waveformBarCount = desiredBarCount;
+          waveformBarWidth = (availableWidth - waveformGap * (waveformBarCount - 1)) / waveformBarCount;
+          if (waveformBarWidth < 1) {
+            waveformBarWidth = 1;
+            waveformBarCount = Math.floor(availableWidth / (waveformBarWidth + waveformGap));
+          }
+          const blockSize = Math.max(1, Math.floor(channelData.length / waveformBarCount));
+          filteredData = new Array(waveformBarCount);
+          maxVal = 0;
+          for (let i = 0; i < waveformBarCount; i++) {
+            let maxAmp = 0;
+            for (let j = 0; j < blockSize; j++) {
+              const datum = channelData[i * blockSize + j] || 0;
+              const absVal = Math.abs(datum);
+              if (absVal > maxAmp) maxAmp = absVal;
+            }
+            filteredData[i] = maxAmp;
+            if (maxAmp > maxVal) maxVal = maxAmp;
+          }
+          drawBaseWaveform();
+          drawHighlight();
+        };
+        reader.readAsArrayBuffer(file);
+      } catch (err) {
+        console.error('Error generating waveform:', err);
+      }
+    }
+
+    function formatTime(sec) {
+      const minutes = Math.floor(sec / 60);
+      const seconds = Math.floor(sec % 60);
+      return String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+    }
+
+    function updateClipTimes() {
+      if (!audioDuration) return;
+      const start = clipStartSec;
+      const end = Math.min(clipStartSec + clipDurationSec, audioDuration);
+      clipTimesLabel.textContent = `${formatTime(start)} – ${formatTime(end)}`;
+    }
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) return;
+      selectedFile = file;
+      const objectUrl = URL.createObjectURL(file);
+      audioPreview.src = objectUrl;
+      audioPreview.load();
+      audioPreview.addEventListener('loadedmetadata', () => {
+        audioDuration = audioPreview.duration;
+        clipStartSec = 0;
+        clipControls.style.display = 'block';
+        timeline.style.display = 'block';
+        clipInfo.style.display = 'flex';
+        const clipPercent = Math.min(clipDurationSec / audioDuration, 1) * 100;
+        clipWindow.style.width = clipPercent + '%';
+        clipWindow.style.left = '0%';
+        clipLengthLabel.textContent = `Selected ${Math.min(clipDurationSec, Math.round(audioDuration))}s`;
+        updateClipTimes();
+        if (selectedFile) {
+          generateWaveform(selectedFile);
+        }
+      }, { once: true });
+    });
+    let isDraggingClip = false;
+    let dragOffset = 0;
+    clipWindow.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      isDraggingClip = true;
+      const clipRect = clipWindow.getBoundingClientRect();
+      dragOffset = e.clientX - clipRect.left;
+      audioPreview.pause();
+    });
+    timeline.addEventListener('pointermove', (e) => {
+      if (!isDraggingClip || audioDuration === 0) return;
+      const rect = timeline.getBoundingClientRect();
+      let pos = e.clientX - rect.left - dragOffset;
+      const maxPos = rect.width - clipWindow.offsetWidth;
+      pos = Math.max(0, Math.min(pos, maxPos));
+      const leftPercent = (pos / rect.width) * 100;
+      clipWindow.style.left = leftPercent + '%';
+      clipStartSec = (pos / rect.width) * audioDuration;
+      updateClipTimes();
+      drawHighlight();
+    });
+    document.addEventListener('pointerup', () => {
+      if (!isDraggingClip) return;
+      isDraggingClip = false;
+      if (audioDuration > 0) {
+        try {
+          audioPreview.pause();
+          audioPreview.currentTime = clipStartSec;
+          audioPreview.play();
+        } catch (e) {}
+      }
+      drawHighlight();
+    });
+
+    audioPreview.addEventListener('play', () => {
+      if (!isNaN(clipStartSec)) {
+        audioPreview.currentTime = clipStartSec;
+      }
+    });
+
+    audioPreview.addEventListener('timeupdate', () => {
+      if (!isNaN(clipStartSec) && audioPreview.currentTime >= clipStartSec + clipDurationSec) {
+        audioPreview.pause();
+      }
+      drawHighlight();
+    });
+    
+    // ================================================================
+    // БЛОК 3: ОТПРАВКА ФОРМЫ, КНОПКИ И МОДАЛЬНЫЕ ОКНА
+    // ================================================================
+    const form = document.getElementById('upload-form');
+    const submitButtonContainer = document.querySelector('.final-actions');
+    const progressContainer = document.getElementById('progress-container');
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      audioPreview.pause();
+      const formData = new FormData(form);
+      formData.set('clip_start', Math.round(clipStartSec));
+      submitButtonContainer.style.display = 'none';
+      progressContainer.style.display = 'flex';
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', 'upload.php', true);
+      xhr.upload.addEventListener('progress', function(e) {
+        if (e.lengthComputable) {
+          const percentComplete = Math.round((e.loaded / e.total) * 100);
+          progressBar.style.width = percentComplete + '%';
+          progressText.textContent = percentComplete + '%';
+        }
+      });
+      xhr.addEventListener('load', function() {
+        if (xhr.status === 200) {
+          progressBar.style.width = '100%';
+          progressText.textContent = 'Done!';
+        } else {
+          progressText.textContent = 'Error!';
+          alert('Upload failed. Server responded with status: ' + xhr.status);
+          submitButtonContainer.style.display = 'block';
+          progressContainer.style.display = 'none';
+        }
+      });
+      xhr.addEventListener('error', function() {
+        progressText.textContent = 'Network Error!';
+        alert('A network error occurred.');
+        submitButtonContainer.style.display = 'block';
+        progressContainer.style.display = 'none';
+      });
+      xhr.send(formData);
+    });
+
+    const cancelClipBtn = document.getElementById('cancel-clip');
+    const confirmClipBtn = document.getElementById('confirm-clip');
+
+    if (cancelClipBtn) {
+      cancelClipBtn.addEventListener('click', () => {
+        audioPreview.pause();
+        clipStartSec = 0;
+        clipControls.style.display = 'none';
+        fileInput.value = '';
+        selectedFile = null;
+      });
+    }
+
+    if (confirmClipBtn) {
+      confirmClipBtn.addEventListener('click', () => {
+        audioPreview.pause();
+        clipControls.style.display = 'none';
+      });
+    }
+
+    const backToPlayerBtn = document.getElementById('back-to-player');
+    if (backToPlayerBtn) {
+      backToPlayerBtn.addEventListener('click', () => {
+        window.location.href = 'index.html';
+      });
+    }
+
+    // Defer attaching the open/close handlers for the rules modal until the DOM is fully loaded.
+    document.addEventListener('DOMContentLoaded', function () {
+        const openRulesBtn = document.getElementById('open-rules');
+        const rulesModal = document.getElementById('rules-modal');
+        if (rulesModal && openRulesBtn) {
+            const closeRulesBtn = rulesModal.querySelector('.close-btn');
+            openRulesBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                rulesModal.classList.remove('hidden');
+            });
+            closeRulesBtn.addEventListener('click', function () {
+                rulesModal.classList.add('hidden');
+            });
+        }
+    });
+  })();
+  </script>
+  <!-- RULES MODAL -->
+  <div id="rules-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>Service Rules & Policies</h2>
+      <h3>Terms of Service</h3>
+      <ol>
+        <li>Users may upload their own music files (30‑second excerpts in MP3/WAV) and provide links to their official releases on streaming services.</li>
+        <li>By uploading content, the user confirms that they have all necessary rights and do not infringe third‑party copyrights.</li>
+        <li>The Service is not a distributor or a monetization platform — it only allows listening to excerpts and jumping to streaming platforms.</li>
+        <li>The administration reserves the right to remove any content that violates rules or third‑party rights without prior notice.</li>
+        <li>Use of the Service is provided “as is” (AS IS). We do not guarantee uninterrupted operation or the absence of errors.</li>
+      </ol>
+      <hr>
+      <h3>Privacy Policy</h3>
+      <ol>
+        <li>The Service does not collect or store personal data other than the information voluntarily provided during upload (track title, artist, links to streaming services).</li>
+        <li>We do not use cookies for tracking and we do not share your data with third parties.</li>
+        <li>Uploaded music files are used solely for the operation of the Service and may be deleted at the request of the owner.</li>
+        <li>A user may contact the administration to request deletion of any content or information.</li>
+      </ol>
+      <hr>
+      <h3>Copyright Disclaimer</h3>
+      <ol>
+        <li>All rights to uploaded musical materials belong to the authors and rightsholders.</li>
+        <li>The administration does not verify the originality or legal status of tracks.</li>
+        <li>The user who uploaded the file bears full responsibility for any copyright infringement.</li>
+        <li>Upon receiving a complaint, the disputed content will be removed.</li>
+      </ol>
+      <button class="close-btn" style="margin-top:16px;">Close</button>
+    </div>
+  </div>
+</body>
+</html>

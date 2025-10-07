@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>ANTIHIT Shuffle</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/assets/css/app.css">
+</head>
+<body>
+  
+  <div class="player-container">
+    
+    <header class="player-header">
+      <h1>ANTIHIT Shuffle</h1>
+    </header>
+
+    <div class="orb-container">
+      <div id="orb" class="orb">
+        <div class="orb__background"></div>
+        <canvas id="visualizer-canvas" class="visualizer-canvas" style="display: none;"></canvas>
+        <button id="play-button" class="play-button" aria-label="Play/Pause">
+          <svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+          <svg class="icon-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
+        </button>
+        
+        <div class="orb__hint hint--up">
+          next <span class="arrow">⟳</span>
+        </div>
+        <div class="orb__hint hint--down">
+          <span class="arrow">⟲</span> back
+        </div>
+      </div>
+    </div>
+    
+    <div id="services-popover" class="services-popover">
+        <button id="open-services-btn" class="open-services-btn">Full versions here</button>
+        <nav id="services" class="services"></nav>
+    </div>
+
+    <!-- Add track button -->
+    <div class="add-track-button-container">
+      <a href="/upload.html" class="add-track-btn">Add your track</a>
+    </div>
+
+  </div>
+
+  <script src="/assets/js/player.js" defer></script>
+</body>
+</html>
