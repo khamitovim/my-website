@@ -3,39 +3,48 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Add Your Track</title>
+  <title>Add Your Song</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/css/app.css">
   
   <style>
-    /* ОБЩИЕ УЛУЧШЕНИЯ ВЁРСТКИ */
+    /* ИЗМЕНЕНИЕ: Добавлены стили для стабилизации на мобильных устройствах */
+    html, body {
+      height: auto; /* Позволяет странице быть выше экрана */
+      overflow-y: auto; /* Включает вертикальную прокрутку */
+    }
+    .player-container {
+      height: auto; /* Контейнер подстраивается под высоту контента */
+      justify-content: flex-start; /* Выравнивание контента по верху */
+    }
+    /* --- Конец изменений --- */
+
     .upload-container { 
       max-width: 500px; 
       margin: 0 auto; 
-      padding: 0 24px 48px; /* Добавлен отступ снизу */
+      padding: 0 24px 48px;
     }
     
-    /* FLEXBOX ДЛЯ ФОРМЫ */
     .upload-form {
       display: flex;
       flex-direction: column;
-      gap: 20px; /* Равномерный отступ между всеми элементами */
+      gap: 15px; 
     }
 
     .upload-form label {
       display: flex;
       flex-direction: column;
-      gap: 8px; /* Отступ между названием поля и самим полем */
+      gap: 8px;
       font-weight: bold;
       font-size: 14px;
+      margin-bottom: 0;
     }
 
-    /* Стиль для плейсхолдеров */
     .upload-form input::placeholder {
       font-style: italic;
-      font-weight: 400 !important; /* Гарантированно нежирный шрифт */
+      font-weight: 400 !important;
       color: #888;
     }
     
@@ -64,73 +73,57 @@
         display: flex;
         flex-direction: column;
         gap: 12px;
-    }
-    
-    /* Стили для модального окна (добавьте их, если у вас нет общих стилей для modal) */
-    .modal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0,0,0,0.7);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 1000;
-        padding: 20px;
-    }
-    .modal.hidden {
-        display: none;
-    }
-    .modal-content {
-        background: #1a1a1a;
-        padding: 24px;
-        border-radius: 12px;
-        max-width: 600px;
-        width: 100%;
-        max-height: 80vh;
-        overflow-y: auto;
-        color: #fff;
-    }
-    .modal-content h2, .modal-content h3 {
-        color: #fff;
-    }
-    .modal-content ul {
-        padding-left: 20px;
-        line-height: 1.6;
-    }
-    .modal-content p {
-        line-height: 1.6;
-    }
-    .close-btn {
-        display: inline-block;
-        padding: 10px 20px;
-        border: none;
-        border-radius: 8px;
-        background-color: #6633ff;
-        color: white;
-        font-weight: bold;
-        cursor: pointer;
-    }
-    .rules-link {
-        background: none;
-        border: none;
-        color: #6633ff;
-        text-decoration: underline;
-        cursor: pointer;
-        padding: 0;
-        font-size: inherit;
-        font-family: inherit;
+        margin-top: 15px;
     }
 
+    .modal {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.7); display: flex; align-items: center;
+        justify-content: center; z-index: 1000; padding: 20px;
+    }
+    .modal.hidden { display: none; }
+    .modal-content {
+        background: #1a1a1a; padding: 24px; border-radius: 12px;
+        max-width: 600px; width: 100%; max-height: 80vh;
+        overflow-y: auto; color: #fff;
+    }
+    .modal-content h2, .modal-content h3 { color: #fff; }
+    .modal-content ul { padding-left: 20px; line-height: 1.6; }
+    .modal-content p { line-height: 1.6; }
+    .close-btn {
+        display: inline-block; padding: 10px 20px; border: none;
+        border-radius: 8px; background-color: #6633ff; color: white;
+        font-weight: bold; cursor: pointer;
+    }
+    .rules-link {
+        background: none; border: none; color: #6633ff;
+        text-decoration: underline; cursor: pointer; padding: 0;
+        font-size: inherit; font-family: inherit;
+    }
+
+    .streaming-notice {
+        font-size: 13px;
+        color: #ffcc00;
+        padding: 10px;
+        background-color: rgba(255, 204, 0, 0.1);
+        border-radius: 8px;
+        margin-top: 5px;
+        margin-bottom: -5px;
+    }
+    .error-message {
+        color: #ff4d4d;
+        font-size: 12px;
+        margin-top: -10px;
+        margin-bottom: -5px;
+        display: none;
+    }
   </style>
 </head>
 <body>
   <div class="player-container" style="overflow-y:auto; padding-top:60px;">
     <div class="upload-container">
-      <h1>Add Your Track</h1>
-      <form id="upload-form" class="upload-form">
+      <h1 style="margin-bottom: 25px;">Add Your Song</h1>
+      <form id="upload-form" class="upload-form" novalidate>
         
         <label>Song Title
             <input type="text" name="song_title" id="song_title_input" placeholder="Enter your song title" required>
@@ -139,7 +132,7 @@
             <input type="text" name="artist" id="artist_input" placeholder="Enter your artist name" required>
         </label>
 
-        <label>File (MP3 or WAV)
+        <label>Upload your file (MP3 or WAV)
             <input type="file" name="audio_file" accept=".mp3,.wav" required>
         </label>
         
@@ -170,6 +163,7 @@
             <option value="Alternative">Alternative</option>
             <option value="Rock">Rock</option>
             <option value="Country">Country</option>
+            <option value="Instrumental">Instrumental</option>
           </select>
         </label>
 
@@ -183,35 +177,44 @@
             </div>
         </div>
 
-        <label>Spotify (optional)
-            <input type="url" name="spotify" placeholder="https://open.spotify.com/track/1qSo41Z9cAZdl3VtxYLNLi?si=72a528c11993407c">
+        <div class="streaming-notice">*You must add at least one link to streaming services.</div>
+
+        <label>Spotify <small>(add a direct link to your song)</small>
+            <input type="url" name="spotify" id="spotify_input" placeholder="https://open.spotify.com/">
         </label>
-        <label>YouTube Music (optional)
-            <input type="url" name="youtube_music" placeholder="https://music.youtube.com/watch?v=...">
+        <div class="error-message" id="spotify-error"></div>
+
+        <label>YouTube Music <small>(add a direct link to your song)</small>
+            <input type="url" name="youtube_music" id="youtube_input" placeholder="https://music.youtube.com/">
         </label>
-        <label>Apple Music (optional)
-            <input type="url" name="apple_music" placeholder="https://music.apple.com/us/song/...">
+         <div class="error-message" id="youtube-error"></div>
+
+        <label>Apple Music <small>(add a direct link to your song)</small>
+            <input type="url" name="apple_music" id="apple_input" placeholder="https://music.apple.com/">
         </label>
-        <label>Amazon Music (optional)
-            <input type="url" name="amazon_music" placeholder="https://music.amazon.com/tracks/...">
+        <div class="error-message" id="apple-error"></div>
+
+        <label>Amazon Music <small>(add a direct link to your song)</small>
+            <input type="url" name="amazon_music" id="amazon_input" placeholder="https://music.amazon.com/">
         </label>
-        
+        <div class="error-message" id="amazon-error"></div>
+        <div class="error-message" id="general-links-error"></div>
+
         <div style="display: flex; align-items: center; gap: 10px;">
-  <input type="checkbox" id="agree" required style="width: 18px; height: 18px; margin: 0; flex-shrink: 0;">
-  <label for="agree" style="font-size: 13px; font-weight: normal; line-height: 1;">
-    I accept the 
-    <button type="button" id="open-rules" class="rules-link" style="margin-left: 3px;">service rules</button>
-  </label>
-</div>
-
-        <div class="final-actions">
-            <button type="submit" class="save-btn">Upload</button>
-            <button type="button" class="back-btn" id="back-to-player">Back to Player</button>
+          <input type="checkbox" id="agree" required style="width: 18px; height: 18px; margin: 0; flex-shrink: 0;">
+          <label for="agree" style="font-size: 13px; font-weight: normal; line-height: 1;">
+            I accept the 
+            <button type="button" id="open-rules" class="rules-link" style="margin-left: 3px;">service rules</button>
+          </label>
         </div>
-
+        
+        <button type="submit" class="save-btn" id="upload-submit-btn">Upload</button>
         <div id="progress-container" class="progress-container" style="display:none;">
           <div class="progress-bar-bg"><div id="progress-bar"></div></div>
           <span id="progress-text">0%</span>
+        </div>
+        <div class="final-actions">
+            <button type="button" class="back-btn" id="back-to-player">Back to Player</button>
         </div>
 
       </form>
@@ -220,9 +223,6 @@
 
   <script>
   (function() {
-    // ================================================================
-    // БЛОК 1: ЛОГИКА ДЛЯ ДИНАМИЧЕСКИХ ПОИСКОВЫХ ССЫЛОК
-    // ================================================================
     const artistInput = document.getElementById('artist_input');
     const titleInput = document.getElementById('song_title_input');
     const searchLinksContainer = document.getElementById('search-links-container');
@@ -254,9 +254,6 @@
     artistInput.addEventListener('change', updateSearchLinks);
     titleInput.addEventListener('change', updateSearchLinks);
 
-    // ================================================================
-    // БЛОК 2: ЛОГИКА ДЛЯ ВЕЙВФОРМЫ И ВЫБОРА ОТРЕЗКА
-    // ================================================================
     const fileInput = document.querySelector('input[name="audio_file"]');
     const clipControls = document.getElementById('clip-controls');
     let clipStartSec = 0;
@@ -471,22 +468,81 @@
       drawHighlight();
     });
     
-    // ================================================================
-    // БЛОК 3: ОТПРАВКА ФОРМЫ, КНОПКИ И МОДАЛЬНЫЕ ОКНА
-    // ================================================================
     const form = document.getElementById('upload-form');
-    const submitButtonContainer = document.querySelector('.final-actions');
+    const submitButton = document.getElementById('upload-submit-btn');
     const progressContainer = document.getElementById('progress-container');
     const progressBar = document.getElementById('progress-bar');
     const progressText = document.getElementById('progress-text');
+    const spotifyInput = document.getElementById('spotify_input');
+    const youtubeInput = document.getElementById('youtube_input');
+    const appleInput = document.getElementById('apple_input');
+    const amazonInput = document.getElementById('amazon_input');
+    const spotifyError = document.getElementById('spotify-error');
+    const youtubeError = document.getElementById('youtube-error');
+    const appleError = document.getElementById('apple-error');
+    const amazonError = document.getElementById('amazon-error');
+    const generalLinksError = document.getElementById('general-links-error');
+
+    function validateForm() {
+      let isValid = true;
+      let hasAtLeastOneLink = false;
+
+      [spotifyError, youtubeError, appleError, amazonError, generalLinksError].forEach(el => {
+        el.textContent = '';
+        el.style.display = 'none';
+      });
+
+      if (spotifyInput.value && !spotifyInput.value.startsWith('https://open.spotify.com/')) {
+        spotifyError.textContent = 'Invalid Spotify URL format.';
+        spotifyError.style.display = 'block';
+        isValid = false;
+      }
+      if(spotifyInput.value) hasAtLeastOneLink = true;
+
+      if (youtubeInput.value && !youtubeInput.value.startsWith('https://music.youtube.com/')) {
+        youtubeError.textContent = 'Invalid YouTube Music URL format.';
+        youtubeError.style.display = 'block';
+        isValid = false;
+      }
+      if(youtubeInput.value) hasAtLeastOneLink = true;
+
+      if (appleInput.value && !appleInput.value.startsWith('https://music.apple.com/')) {
+        appleError.textContent = 'Invalid Apple Music URL format.';
+        appleError.style.display = 'block';
+        isValid = false;
+      }
+       if(appleInput.value) hasAtLeastOneLink = true;
+
+      if (amazonInput.value && !amazonInput.value.startsWith('https://music.amazon.com/')) {
+        amazonError.textContent = 'Invalid Amazon Music URL format.';
+        amazonError.style.display = 'block';
+        isValid = false;
+      }
+       if(amazonInput.value) hasAtLeastOneLink = true;
+      
+      if (!hasAtLeastOneLink) {
+        generalLinksError.textContent = 'Error: You must provide at least one streaming link.';
+        generalLinksError.style.display = 'block';
+        isValid = false;
+      }
+      
+      return isValid;
+    }
 
     form.addEventListener('submit', (e) => {
       e.preventDefault();
+
+      if (!validateForm()) {
+        return;
+      }
+
       audioPreview.pause();
       const formData = new FormData(form);
       formData.set('clip_start', Math.round(clipStartSec));
-      submitButtonContainer.style.display = 'none';
+
+      submitButton.style.display = 'none';
       progressContainer.style.display = 'flex';
+
       const xhr = new XMLHttpRequest();
       xhr.open('POST', 'upload.php', true);
       xhr.upload.addEventListener('progress', function(e) {
@@ -499,18 +555,18 @@
       xhr.addEventListener('load', function() {
         if (xhr.status === 200) {
           progressBar.style.width = '100%';
-          progressText.textContent = 'Done!';
+          progressText.innerHTML = 'Congratulations, your song has been successfully added to our player.';
         } else {
           progressText.textContent = 'Error!';
           alert('Upload failed. Server responded with status: ' + xhr.status);
-          submitButtonContainer.style.display = 'block';
+          submitButton.style.display = 'block';
           progressContainer.style.display = 'none';
         }
       });
       xhr.addEventListener('error', function() {
         progressText.textContent = 'Network Error!';
         alert('A network error occurred.');
-        submitButtonContainer.style.display = 'block';
+        submitButton.style.display = 'block';
         progressContainer.style.display = 'none';
       });
       xhr.send(formData);
@@ -543,7 +599,6 @@
       });
     }
 
-    // Defer attaching the open/close handlers for the rules modal until the DOM is fully loaded.
     document.addEventListener('DOMContentLoaded', function () {
         const openRulesBtn = document.getElementById('open-rules');
         const rulesModal = document.getElementById('rules-modal');
@@ -561,7 +616,6 @@
     });
   })();
   </script>
-  <!-- RULES MODAL -->
   <div id="rules-modal" class="modal hidden">
     <div class="modal-content">
       <h2>Service Rules & Policies</h2>
