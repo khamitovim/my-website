@@ -15,16 +15,18 @@
     currentTrack: null,
     isPlaying: false,
     animationFrameId: null,
-    audioUnlocked: false, // <-- НОВЫЙ ФЛАГ для отслеживания активации аудио
+    audioUnlocked: false,
   };
 
   const dom = {
     container: document.querySelector('.player-container'),
+    orbContainer: document.querySelector('.orb-container'),
     orb: document.getElementById('orb'),
     playButton: document.getElementById('play-button'),
     services: document.getElementById('services'),
     servicesPopover: document.getElementById('services-popover'),
     openServicesBtn: document.getElementById('open-services-btn'),
+    effectsContainer: document.getElementById('effects-container'),
   };
 
   const init = async () => {
@@ -112,7 +114,6 @@
 
   const play = async () => {
     if (!state.currentTrack || state.isPlaying) return;
-    // Безопасная проверка и возобновление аудиоконтекста
     if (state.audioContext && state.audioContext.state === 'suspended') {
       await state.audioContext.resume();
     }
@@ -135,10 +136,8 @@
 
   const loadTrack = async (trackData) => {
     state.currentTrack = { clipDuration: SETTINGS.CLIP_DURATION, ...trackData, links: {} };
-    // Preload the audio for faster start
     state.audioElement.src = trackData.ogg || trackData.mp3;
-    state.audioElement.preload = 'auto';
-    try { state.audioElement.load(); } catch (e) {}
+    
     if (trackData.meta) {
         try {
             const response = await fetch(trackData.meta);
@@ -175,16 +174,37 @@
     state.animationFrameId = requestAnimationFrame(animate);
   };
   
-  // <-- ИЗМЕНЕНО: Более надежная логика активации аудио
   const unlockAudio = async () => {
     if (state.audioUnlocked) return;
     await setupAudioContext();
     state.audioUnlocked = true;
   };
 
+  const createSwipeTrail = (x, y) => {
+    const trail = document.createElement('div');
+    trail.className = 'swipe-trail';
+    
+    trail.style.left = `${x}px`;
+    trail.style.top = `${y}px`;
+    trail.style.transform = `translate(-50%, -50%) scale(1)`; 
+    
+    dom.effectsContainer.appendChild(trail);
+    
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        trail.style.opacity = '0';
+        trail.style.transform = `translate(-50%, -50%) scale(0)`;
+      });
+    });
+
+    setTimeout(() => {
+      trail.remove();
+    }, 500);
+  };
+
   const setupEventListeners = () => {
     dom.playButton.addEventListener('click', () => { 
-        unlockAudio(); // Активируем аудио при первом клике
+        unlockAudio();
         if (state.audioElement.paused) {
           play();
         } else {
@@ -202,9 +222,10 @@
     let startAngle = 0;
     let lastAngle = 0;
     let accumulatedAngle = 0;
+    let lastTrailTime = 0;
 
     const getAngle = (e) => {
-      const rect = dom.orb.getBoundingClientRect();
+      const rect = dom.orbContainer.getBoundingClientRect();
       const centerX = rect.left + rect.width / 2;
       const centerY = rect.top + rect.height / 2;
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -213,20 +234,45 @@
     };
 
     const onPointerDown = (e) => {
-      // Do not initiate rotation if user clicks on the play button or its children
       const target = e.target;
       if (target === dom.playButton || (dom.playButton && dom.playButton.contains(target))) {
         return;
       }
-      unlockAudio(); // Активируем аудио при первом свайпе
+      
+      const rect = dom.orbContainer.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const clickX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clickY = e.touches ? e.touches[0].clientY : e.clientY;
+      const distance = Math.sqrt(Math.pow(clickX - centerX, 2) + Math.pow(clickY - centerY, 2));
+
+      if (distance > rect.width / 2) {
+        return;
+      }
+
+      unlockAudio();
       isDragging = true;
       startAngle = lastAngle = getAngle(e);
       accumulatedAngle = 0;
-      dom.orb.setPointerCapture(e.pointerId);
+      dom.orbContainer.setPointerCapture(e.pointerId);
     };
 
     const onPointerMove = (e) => {
       if (!isDragging) return;
+
+      const now = Date.now();
+      if (now - lastTrailTime > 30) {
+        const rect = dom.orbContainer.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+
+        createSwipeTrail(x, y);
+        lastTrailTime = now;
+      }
+
       const currentAngle = getAngle(e);
       let delta = currentAngle - lastAngle;
       if (delta > Math.PI) delta -= 2 * Math.PI;
@@ -238,7 +284,7 @@
     const onPointerUp = (e) => {
       if (!isDragging) return;
       isDragging = false;
-      dom.orb.releasePointerCapture(e.pointerId);
+      dom.orbContainer.releasePointerCapture(e.pointerId);
 
       const threshold = Math.PI / 4; 
 
@@ -251,12 +297,12 @@
       }
     };
 
-    dom.orb.addEventListener('pointerdown', onPointerDown);
-    document.addEventListener('pointermove', onPointerMove);
-    document.addEventListener('pointerup', onPointerUp);
+    dom.orbContainer.addEventListener('pointerdown', onPointerDown);
+    dom.orbContainer.addEventListener('pointermove', onPointerMove);
+    dom.orbContainer.addEventListener('pointerup', onPointerUp);
     
     dom.openServicesBtn.addEventListener('click', (e) => {
-        unlockAudio(); // Активируем аудио при клике на эту кнопку тоже
+        unlockAudio();
         e.stopPropagation();
         dom.servicesPopover.classList.add('is-open');
     });
@@ -269,8 +315,37 @@
     window.addEventListener('pageshow', (event) => {
       if (event.persisted && state.isPlaying) {
         animate();
+        if (state.audioContext && state.audioContext.state === 'suspended') {
+          state.audioContext.resume();
+        }
+        if (state.audioElement.paused) {
+          state.audioElement.play().catch(e => {
+            ui.setPlaying(false);
+            console.error("Не удалось возобновить аудио после возврата на страницу:", e);
+          });
+        }
       }
     });
+
+    // --- ИЗМЕНЕНИЕ: Новый блок для предотвращения "pull-to-refresh" ---
+    let touchStartY = 0;
+    document.body.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) { // Запоминаем только если это одиночное касание
+        touchStartY = e.touches[0].clientY;
+      }
+    }, { passive: false });
+
+    document.body.addEventListener('touchmove', (e) => {
+      const touchY = e.touches[0].clientY;
+      const touchYDelta = touchY - touchStartY;
+
+      // Если мы вверху страницы и тянем вниз (пытаемся обновить)
+      if (window.scrollY === 0 && touchYDelta > 0) {
+        e.preventDefault(); // Отменяем стандартное поведение браузера
+      }
+    }, { passive: false });
+    // --- Конец нового блока ---
+
   };
 
   const fetchTracks = async () => {
