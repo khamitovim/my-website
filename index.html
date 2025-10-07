@@ -16,9 +16,12 @@
     
     <header class="player-header">
       <h1>ANTIHIT Shuffle</h1>
+      <p id="track-counter" class="track-counter"></p>
     </header>
 
     <div class="orb-container">
+      <div id="effects-container"></div>
+      
       <div id="orb" class="orb">
         <div class="orb__background"></div>
         <canvas id="visualizer-canvas" class="visualizer-canvas" style="display: none;"></canvas>
@@ -36,14 +39,15 @@
       </div>
     </div>
     
-    <div id="services-popover" class="services-popover">
-        <button id="open-services-btn" class="open-services-btn">Full versions here</button>
-        <nav id="services" class="services"></nav>
-    </div>
+    <div class="controls-stack">
+      <div id="services-popover" class="services-popover">
+          <button id="open-services-btn" class="open-services-btn">Full versions here</button>
+          <nav id="services" class="services"></nav>
+      </div>
 
-    <!-- Add track button -->
-    <div class="add-track-button-container">
-      <a href="/upload.html" class="add-track-btn">Add your track</a>
+      <div class="add-track-button-container">
+        <a href="/upload.html" class="add-track-btn">Add your track</a>
+      </div>
     </div>
 
   </div>
